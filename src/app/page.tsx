@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Trophy } from "lucide-react";
 
 async function getHighlights() {
   const latestWeek = await prisma.week.findFirst({ orderBy: { number: "desc" } });
@@ -13,39 +14,47 @@ async function getHighlights() {
   return { latestWeek, top, posts, threads };
 }
 
+const LAST_YEAR_CHAMPION = "Alpha FC";
+
 export default async function HomePage() {
   const { latestWeek, top, posts, threads } = await getHighlights();
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-2">Top Scorers {latestWeek ? `(Week ${latestWeek.number})` : ""}</h2>
-        <ul className="space-y-1">
-          {top.length === 0 && <li className="text-sm text-zinc-500">No data yet.</li>}
-          {top.map((s) => (
-            <li key={s.id} className="flex justify-between">
-              <span>{s.team.name}</span>
-              <span className="font-mono">{Number(s.points).toFixed(2)}</span>
-            </li>
-          ))}
-        </ul>
+    <div className="space-y-6">
+      <div className="flex flex-col items-center">
+        <Trophy className="w-32 h-32 text-jhu-gold" />
+        <p className="mt-4 text-2xl font-bold text-center">{`Last Year's Champion: ${LAST_YEAR_CHAMPION}`}</p>
       </div>
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-2">Latest Posts</h2>
-        <ul className="list-disc ml-4">
-          {posts.map(p => <li key={p.id}>{p.title}</li>)}
-          {posts.length === 0 && <li className="text-sm text-zinc-500">No posts yet.</li>}
-        </ul>
-      </div>
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-2">Active Threads</h2>
-        <ul className="list-disc ml-4">
-          {threads.map(t => <li key={t.id}>{t.title}</li>)}
-          {threads.length === 0 && <li className="text-sm text-zinc-500">No threads yet.</li>}
-        </ul>
-      </div>
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-2">Awards (Latest Week)</h2>
-        <p className="text-sm text-zinc-500">Populate via the awards engine after ingest.</p>
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-2">Top Scorers {latestWeek ? `(Week ${latestWeek.number})` : ""}</h2>
+          <ul className="space-y-1">
+            {top.length === 0 && <li className="text-sm text-jhu-blue/70">No data yet.</li>}
+            {top.map((s) => (
+              <li key={s.id} className="flex justify-between">
+                <span>{s.team.name}</span>
+                <span className="font-mono">{Number(s.points).toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-2">Latest Posts</h2>
+          <ul className="list-disc ml-4">
+            {posts.map(p => <li key={p.id}>{p.title}</li>)}
+            {posts.length === 0 && <li className="text-sm text-jhu-blue/70">No posts yet.</li>}
+          </ul>
+        </div>
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-2">Active Threads</h2>
+          <ul className="list-disc ml-4">
+            {threads.map(t => <li key={t.id}>{t.title}</li>)}
+            {threads.length === 0 && <li className="text-sm text-jhu-blue/70">No threads yet.</li>}
+          </ul>
+        </div>
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-2">Awards (Latest Week)</h2>
+          <p className="text-sm text-jhu-blue/70">Populate via the awards engine after ingest.</p>
+        </div>
       </div>
     </div>
   );
