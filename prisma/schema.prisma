@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String  @id @default(cuid())
+  name         String?
+  email        String? @unique
+  image        String?
+  role         String  @default("member")
+  passwordHash String?
+
+  teams     Team[]     @relation("OwnerTeams")
+  posts     Post[]
+  threads   Thread[]
+  comments  Comment[]
+  reactions Reaction[]
+  pollVotes PollVote[]
+
+  accounts Account[]
+  sessions Session[]
+}
+
+model League {
+  id               String    @id @default(cuid())
+  name             String
+  season           Int
+  provider         String? // e.g., "sleeper"
+  providerLeagueId String?
+  teams            Team[]
+  weeks            Week[]
+  matchups         Matchup[]
+  awards           Award[]
+  posts            Post[]
+  threads          Thread[]
+  polls            Poll[]
+  createdAt        DateTime  @default(now())
+}
+
+model Team {
+  id           String    @id @default(cuid())
+  name         String
+  avatarUrl    String?
+  league       League    @relation(fields: [leagueId], references: [id])
+  leagueId     String
+  owner        User?     @relation("OwnerTeams", fields: [ownerUserId], references: [id])
+  ownerUserId  String?
+  scores       Score[]
+  homeMatchups Matchup[] @relation("HomeTeam")
+  awayMatchups Matchup[] @relation("AwayTeam")
+  awards       Award[]
+}
+
+model Week {
+  id        String    @id @default(cuid())
+  number    Int
+  startDate DateTime?
+  endDate   DateTime?
+  league    League    @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  matchups  Matchup[]
+  awards    Award[]
+}
+
+model Matchup {
+  id         String  @id @default(cuid())
+  league     League  @relation(fields: [leagueId], references: [id])
+  leagueId   String
+  week       Week    @relation(fields: [weekId], references: [id])
+  weekId     String
+  homeTeam   Team    @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  homeTeamId String
+  awayTeam   Team    @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  awayTeamId String
+  scores     Score[]
+
+  @@unique([leagueId, weekId, homeTeamId, awayTeamId])
+}
+
+model Score {
+  id              String   @id @default(cuid())
+  matchup         Matchup  @relation(fields: [matchupId], references: [id])
+  matchupId       String
+  team            Team     @relation(fields: [teamId], references: [id])
+  teamId          String
+  points          Decimal  @default(0)
+  projectedPoints Decimal?
+
+  @@index([matchupId, teamId])
+}
+
+model Award {
+  id       String  @id @default(cuid())
+  league   League  @relation(fields: [leagueId], references: [id])
+  leagueId String
+  week     Week    @relation(fields: [weekId], references: [id])
+  weekId   String
+  type     String
+  team     Team?   @relation(fields: [teamId], references: [id])
+  teamId   String?
+  notes    String?
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  league      League    @relation(fields: [leagueId], references: [id])
+  leagueId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  title       String
+  slug        String    @unique
+  contentMd   String
+  tags        String?
+  publishedAt DateTime?
+}
+
+model Thread {
+  id        String    @id @default(cuid())
+  league    League    @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  String
+  title     String
+  createdAt DateTime  @default(now())
+  pinned    Boolean   @default(false)
+  comments  Comment[]
+}
+
+model Comment {
+  id              String   @id @default(cuid())
+  thread          Thread   @relation(fields: [threadId], references: [id])
+  threadId        String
+  author          User     @relation(fields: [authorId], references: [id])
+  authorId        String
+  contentMd       String
+  createdAt       DateTime @default(now())
+  parentCommentId String?
+}
+
+model Reaction {
+  id         String @id @default(cuid())
+  entityType String
+  entityId   String
+  user       User   @relation(fields: [userId], references: [id])
+  userId     String
+  emoji      String
+}
+
+model Poll {
+  id          String     @id @default(cuid())
+  league      League     @relation(fields: [leagueId], references: [id])
+  leagueId    String
+  question    String
+  optionsJson String // JSON string array
+  closesAt    DateTime?
+  votes       PollVote[]
+}
+
+model PollVote {
+  id          String @id @default(cuid())
+  poll        Poll   @relation(fields: [pollId], references: [id])
+  pollId      String
+  user        User   @relation(fields: [userId], references: [id])
+  userId      String
+  optionIndex Int
+
+  @@unique([pollId, userId])
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
